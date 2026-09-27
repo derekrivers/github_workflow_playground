@@ -1,0 +1,9 @@
+.git
+.github
+.vscode
+log/*
+tmp/*
+vendor/*
+storage/*
+config/master.key
+config/credentials.yml.enc
