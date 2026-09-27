@@ -1,7 +1,15 @@
 #!/bin/sh
 set -eu
 
-cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:$PATH}"
+export PATH
+
+app_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+if [ -d "$app_dir/../.agent-tools/docker-config" ]; then
+  DOCKER_CONFIG="$app_dir/../.agent-tools/docker-config"
+  export DOCKER_CONFIG
+fi
+cd "$app_dir"
 
 case "${1:-all}" in
   all)
@@ -12,12 +20,22 @@ case "${1:-all}" in
     ;;
   start)
     shift
-    [ "$#" -eq 0 ] || { echo "Usage: ./test-app start" >&2; exit 2; }
-    exec docker compose up --build -d --wait test
+    if [ "$#" -eq 0 ]; then
+      exec docker compose up --build -d --wait test
+    fi
+    [ "$#" -eq 1 ] && [ "$1" = "--no-build" ] || { echo "Usage: ./test-app start [--no-build]" >&2; exit 2; }
+    exec docker compose up --no-build -d --wait test
     ;;
   rspec)
     shift
-    exec docker compose exec -T test sh -c 'bin/rails db:prepare && exec bundle exec rspec "$@"' sh "$@"
+    if [ "$#" -eq 0 ] && [ -d "$app_dir/../.agent-tools" ]; then
+      status_file="$app_dir/../.agent-tools/full-suite-status"
+      printf 'running\n' > "$status_file"
+      docker compose exec -T test sh -c 'bin/rails db:prepare && exec bundle exec rspec "$@"' sh
+      printf 'passed\n' > "$status_file"
+    else
+      exec docker compose exec -T test sh -c 'bin/rails db:prepare && exec bundle exec rspec "$@"' sh "$@"
+    fi
     ;;
   stop)
     shift
@@ -25,7 +43,7 @@ case "${1:-all}" in
     exec docker compose down
     ;;
   *)
-    echo "Usage: ./test-app [all [RSpec args...]|start|rspec [RSpec args...]|stop]" >&2
+    echo "Usage: ./test-app [all [RSpec args...]|start [--no-build]|rspec [RSpec args...]|stop]" >&2
     exit 2
     ;;
 esac
