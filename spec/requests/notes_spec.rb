@@ -1,6 +1,15 @@
 require "rails_helper"
 
 RSpec.describe "Notes API", type: :request do
+  describe "GET /notes/ping" do
+    it "returns an ok status payload" do
+      get "/notes/ping"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq("status" => "ok")
+    end
+  end
+
   describe "GET /notes" do
     it "returns notes in creation order" do
       first = Note.create!(title: "First", body: "One")

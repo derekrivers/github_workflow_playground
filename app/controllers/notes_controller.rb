@@ -1,4 +1,8 @@
 class NotesController < ApplicationController
+  def ping
+    render json: { status: "ok" }
+  end
+
   def index
     render json: Note.order(:id).as_json(only: %i[id title body])
   end
