@@ -5,9 +5,11 @@ PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:$PATH
 export PATH
 
 app_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-if [ -d "$app_dir/../.agent-tools/docker-config" ]; then
-  DOCKER_CONFIG="$app_dir/../.agent-tools/docker-config"
+if [ -d /tmp/gh-aw/test-app-tools/docker-config ]; then
+  DOCKER_CONFIG=/tmp/gh-aw/test-app-tools/docker-config
+  COMPOSE_PROJECT_NAME=app
   export DOCKER_CONFIG
+  export COMPOSE_PROJECT_NAME
 fi
 cd "$app_dir"
 
@@ -28,8 +30,8 @@ case "${1:-all}" in
     ;;
   rspec)
     shift
-    if [ "$#" -eq 0 ] && [ -d "$app_dir/../.agent-tools" ]; then
-      status_file="$app_dir/../.agent-tools/full-suite-status"
+    if [ "$#" -eq 0 ] && [ -d /tmp/gh-aw/test-app-tools ]; then
+      status_file=/tmp/gh-aw/test-app-tools/full-suite-status
       printf 'running\n' > "$status_file"
       docker compose exec -T test sh -c 'bin/rails db:prepare && exec bundle exec rspec "$@"' sh
       printf 'passed\n' > "$status_file"
