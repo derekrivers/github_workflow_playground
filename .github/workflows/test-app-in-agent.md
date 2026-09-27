@@ -29,6 +29,20 @@ network:
     - containers
     - ruby
     - linux-distros
+pre-agent-steps:
+  - name: Stage Docker CLI and Compose for the agent
+    run: |
+      set -euo pipefail
+      tools_dir="$GITHUB_WORKSPACE/.agent-tools"
+      docker_cli="$(readlink -f "$(command -v docker)")"
+      compose_plugin="$(docker info --format '{{range .ClientInfo.Plugins}}{{if eq .Name "compose"}}{{.Path}}{{end}}{{end}}')"
+      test -x "$docker_cli"
+      test -x "$compose_plugin"
+      install -Dm755 "$docker_cli" "$tools_dir/bin/docker"
+      install -Dm755 "$compose_plugin" "$tools_dir/docker-config/cli-plugins/docker-compose"
+      DOCKER_CONFIG="$tools_dir/docker-config" "$tools_dir/bin/docker" compose version
+      echo "$tools_dir/bin" >> "$GITHUB_PATH"
+      echo "DOCKER_CONFIG=$tools_dir/docker-config" >> "$GITHUB_ENV"
 safe-outputs:
   report-failed-jobs: false
   report-failure-as-issue: false
@@ -58,8 +72,10 @@ your sandbox. Work only in that clone. Record its commit SHA.
 
 The requested change is: ${{ inputs.task }}
 
-Run `docker info` inside your sandbox before starting the tests. If the agent
-cannot reach the daemon, record that error and do not claim the tests ran.
+The Docker CLI and Compose plugin are staged in `$GITHUB_WORKSPACE/.agent-tools`
+by a runner step. Use `docker info` and `docker compose version` inside your
+sandbox before starting the tests. If either command fails, record the error
+and do not claim the tests ran.
 
 From the clone, run `./test-app start` once to boot MySQL and the long-running
 Rails test container. The checkout is bind-mounted into `/app`, so source and
