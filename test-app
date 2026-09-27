@@ -2,4 +2,30 @@
 set -eu
 
 cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-exec docker compose up --build --abort-on-container-exit --exit-code-from test
+
+case "${1:-all}" in
+  all)
+    [ "$#" -eq 0 ] || shift
+    trap 'status=$?; docker compose down; exit "$status"' 0
+    docker compose up --build -d --wait test
+    docker compose exec -T test sh -c 'bin/rails db:prepare && exec bundle exec rspec "$@"' sh "$@"
+    ;;
+  start)
+    shift
+    [ "$#" -eq 0 ] || { echo "Usage: ./test-app start" >&2; exit 2; }
+    exec docker compose up --build -d --wait test
+    ;;
+  rspec)
+    shift
+    exec docker compose exec -T test sh -c 'bin/rails db:prepare && exec bundle exec rspec "$@"' sh "$@"
+    ;;
+  stop)
+    shift
+    [ "$#" -eq 0 ] || { echo "Usage: ./test-app stop" >&2; exit 2; }
+    exec docker compose down
+    ;;
+  *)
+    echo "Usage: ./test-app [all [RSpec args...]|start|rspec [RSpec args...]|stop]" >&2
+    exit 2
+    ;;
+esac

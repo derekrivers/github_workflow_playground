@@ -15,6 +15,9 @@ services:
 
   test:
     build: .
+    command: ["sleep", "infinity"]
+    volumes:
+      - .:/app
     environment:
       RAILS_ENV: test
       DB_HOST: db

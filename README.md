@@ -11,13 +11,21 @@ With Docker Compose installed, run:
 ```
 
 You can invoke the script from any directory; it changes to the repository root.
-The `test` container prepares the database and runs the request specs. The script
-returns the RSpec exit status, so the same command works in CI. To remove the
-containers and test database after a run:
+The script starts MySQL and the Rails test container, runs the full RSpec suite,
+returns its exit status, and stops the containers. The same command works in CI.
+
+To keep the containers running while editing code and run a selected spec:
 
 ```sh
-docker compose down -v
+./test-app start
+./test-app rspec spec/requests/notes_spec.rb:5
+./test-app rspec
+./test-app stop
 ```
+
+The checkout is mounted into the Rails container, so code and spec edits appear
+there immediately. Run `./test-app start` again after changing dependencies to
+rebuild the image.
 
 The [Rails tests workflow](.github/workflows/rails-tests.yml) runs this command
 on pushes and pull requests.
