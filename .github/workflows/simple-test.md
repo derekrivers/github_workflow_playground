@@ -17,6 +17,11 @@ safe-outputs:
     max: 1
 
 engine: codex
+
+network:
+  allowed:
+    - defaults
+    - "ab.chatgpt.com"
 ---
 
 # Simple Test
